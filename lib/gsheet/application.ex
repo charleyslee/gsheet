@@ -10,7 +10,7 @@ defmodule GSheet.Application do
         {:ok, json} -> json
         :error -> System.fetch_env!("LB_GOOGLE_SERVICE_ACCOUNT_JSON")
       end
-      |> JSON.decode!()
+      |> Jason.decode!()
 
     claims = %{
       "sub" => System.fetch_env!("LB_GOOGLE_SERVICE_ACCOUNT_EMAIL"),
