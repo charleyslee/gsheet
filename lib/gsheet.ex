@@ -48,6 +48,16 @@ defmodule GSheet do
     }
   end
 
+  def overwrite_sheet(spreadsheet_id, sheet, rows) do
+    Req.put!(
+      gsheet_request(),
+      url: "#{spreadsheet_id}/values/#{sheet}!A1?valueInputOption=RAW",
+      json: %{values: rows}
+    )
+
+    :ok
+  end
+
   def refresh(%GSheet{spreadsheet_id: spreadsheet_id, sheet: sheet}) do
     get_sheet(spreadsheet_id, sheet)
   end
