@@ -76,7 +76,7 @@ defmodule GSheet do
     Req.post!(
       gsheet_request(),
       url:
-        "#{sheet.spreadsheet_id}/values/'#{sheet.sheet}'!#{final_row}:#{final_row}:append?valueInputOption=RAW",
+        "#{sheet.spreadsheet_id}/values/'#{sheet.sheet}'!1:#{final_row}:append?valueInputOption=RAW",
       json: %{values: rows}
     )
 
