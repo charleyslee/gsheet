@@ -11,11 +11,13 @@ defmodule GSheet do
     starting_row = Keyword.get(opts, :starting_row, 1)
 
     [first_row | rows] =
-      Req.get!(
-        gsheet_request(),
-        url: "/#{spreadsheet_id}/values/#{sheet}"
-      ).body["values"]
-      |> Enum.drop(starting_row - 1)
+      case Req.get!(
+             gsheet_request(),
+             url: "/#{spreadsheet_id}/values/'#{sheet}'"
+           ).body do
+        %{"values" => values} -> Enum.drop(values, starting_row - 1)
+        body -> raise "unexpected response: #{inspect(body)}"
+      end
 
     columns = first_row |> Enum.map(&String.to_atom(&1))
 
@@ -24,9 +26,7 @@ defmodule GSheet do
         raise "sheet must have an #{id_column} column"
 
     data =
-      rows
-      |> Enum.with_index(2)
-      |> Enum.map(fn {row, row_num} ->
+      for {row, row_num} <- Enum.with_index(rows, 2) do
         case Enum.at(row, id_index) do
           row_id when row_id in [nil, ""] ->
             nil
@@ -36,7 +36,7 @@ defmodule GSheet do
             padded_row = row ++ List.duplicate(nil, to_pad)
             {row_id, {row_num, padded_row}}
         end
-      end)
+      end
       |> Enum.reject(&is_nil/1)
       |> Map.new()
 
@@ -51,7 +51,7 @@ defmodule GSheet do
   def overwrite_sheet(spreadsheet_id, sheet, rows) do
     Req.put!(
       gsheet_request(),
-      url: "#{spreadsheet_id}/values/#{sheet}!A1?valueInputOption=RAW",
+      url: "#{spreadsheet_id}/values/'#{sheet}'!A1?valueInputOption=RAW",
       json: %{values: rows}
     )
 
@@ -76,7 +76,7 @@ defmodule GSheet do
     Req.post!(
       gsheet_request(),
       url:
-        "#{sheet.spreadsheet_id}/values/#{sheet.sheet}!#{final_row}:#{final_row}:append?valueInputOption=RAW",
+        "#{sheet.spreadsheet_id}/values/'#{sheet.sheet}'!#{final_row}:#{final_row}:append?valueInputOption=RAW",
       json: %{values: rows}
     )
 
@@ -96,7 +96,7 @@ defmodule GSheet do
     Req.put!(
       gsheet_request(),
       url:
-        "#{sheet.spreadsheet_id}/values/#{sheet.sheet}!#{row_num}:#{row_num}?valueInputOption=RAW",
+        "#{sheet.spreadsheet_id}/values/'#{sheet.sheet}'!#{row_num}:#{row_num}?valueInputOption=RAW",
       json: %{values: [ordered_row]}
     )
 
@@ -123,7 +123,8 @@ defmodule GSheet do
     %Req.Response{status: 200} =
       Req.put!(
         gsheet_request(),
-        url: "#{sheet.spreadsheet_id}/values/#{sheet.sheet}!#{cell}:#{cell}?valueInputOption=RAW",
+        url:
+          "#{sheet.spreadsheet_id}/values/'#{sheet.sheet}'!#{cell}:#{cell}?valueInputOption=RAW",
         json: %{
           values: [[value]]
         }
